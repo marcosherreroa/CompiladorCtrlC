@@ -1,0 +1,26 @@
+
+bool esTsup(array<array<int,2>> & matriz, int dim){ //aunque lo pasemos por referencia, hay que darle tamaño a todas menos
+    bool tsup = true;                               // la primera dimension
+    for(int i = 0; tsup && i < dim ; ++i){
+        for(int j = 0; tsup && j < i; ++j){
+            if(matriz[i][j] != 0) tsup = false; 
+        }    
+    }
+    
+    return tsup;
+}
+
+void main(){
+   array<array<int>> matriz = [[1,1],[2,1]];
+   
+   print(100);
+   for(int i = 0; i < 2; ++i){
+      for (int j = 0; j < 2; ++j){
+         print(matriz[i][j]);
+       }
+   }
+   print(100);
+ 
+   if(esTsup(matriz,2)) print (1); //es triangular superior
+   else print (0); //no es triangular superior
+}

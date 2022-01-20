@@ -1,0 +1,12 @@
+alias int Num;
+
+void main(){
+   Num n = input (10); //Introduce un numero
+   Num fact = 1;
+   
+   while (n > 1){
+        fact *= n--; 
+   }
+   
+   print (fact);
+}

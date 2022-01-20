@@ -1,0 +1,19 @@
+// funcion que devuelve true si el parametro recibido es bisiesto
+bool bisiesto(int year) {
+	if (year % 4 == 0) {
+		if (year % 100 == 0){
+			if (year % 400 == 0) return true;
+			else return false;
+		}
+		else return true;
+	}
+	else return false;     
+}
+
+void main() {
+	int year = input() ;
+
+	if (bisiesto(year)) print ("Es bisiesto\n");
+	else print ("No es bisiesto\n");
+    
+}

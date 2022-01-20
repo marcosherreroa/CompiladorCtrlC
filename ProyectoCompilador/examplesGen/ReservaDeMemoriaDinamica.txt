@@ -1,0 +1,28 @@
+class A {
+  int a;
+  int b;
+}
+    
+void main(){
+    int * n = new (int) ; //reservamos espacio para un entero
+    *n = 32;
+    print (100);//direccion
+    print (n);
+    print (100); // valor
+    print (*n);
+    
+    array<char> * arr = new (array<char,3>); //reservamos espacio para 3 caracteres
+    arr[0] = 1;
+    arr[1] = 2;
+    arr[2] = 3;
+    for(int i = 0; i < 3; ++i){
+        print (arr[i]);
+        print (200);
+    }
+    
+    array<A> * ptrA = new (array<A,4>);
+    ptrA[2].a = 10;
+    ptrA[2].b = 20;
+    print(ptrA[2].a);
+    print(ptrA[2].b);
+}

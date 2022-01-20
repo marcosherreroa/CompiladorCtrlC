@@ -1,0 +1,11 @@
+
+int pow (int base, int exponente){
+   if(exponente < 0) return -1;
+   int pot = 1;
+   while(exponente > 0){
+      pot *= base;
+      --exponente;
+   }
+
+   return pot;
+}

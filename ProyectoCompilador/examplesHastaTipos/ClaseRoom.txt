@@ -1,0 +1,36 @@
+
+int const a = 0;
+
+class Room {
+
+    real length;
+    real const breadth;
+    real height;   
+
+    Room(real length, real breadth, real height){
+        this.length = length;
+        this.breadth = breadth;
+        //a = 1; esto da error
+        this.height = height;
+    }
+    
+
+    real calculateArea(){
+        //breadth = 5;   
+        return length * breadth;
+    }
+
+    real calculateVolume(){   
+        return length * breadth * height;
+    }
+}
+
+void main(){
+    Room r1 = Room (10.0, 15.0, 2.5);
+    Room r2 = Room (20.0, 30.0, 3.4);
+    
+    print (r1.calculateArea());
+    print (r2.calculateVolume());
+    
+    //r1.breadth = 20; daria error de compilacion porque r1 es constante
+}

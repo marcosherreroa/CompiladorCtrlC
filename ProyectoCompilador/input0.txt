@@ -1,0 +1,92 @@
+alias int tInt;
+
+int j = 10;
+
+class pos {
+  int x;
+  int y;
+}
+
+int max(int i,int j){
+  print(i);
+  print(j);
+  if(i >= j) return i;
+  else return j;
+}
+
+int suma(array<int,4> v){
+   int suma = 0;
+   int n = sizeof v;
+
+   for(int i = 0; i < n; i++) print(v[i]);
+   for(int i = 0; i < n; i++) suma += v[i];
+
+   return suma;
+}
+
+void campos(pos & p){
+  print(p.x);
+  print(p.y);
+  p.x = 2;
+  p.y = 3;
+}
+
+void mostrarMatriz(array<array<array<int,2>,2>> & m, int dim1){
+  for(int i = 0; i < dim1; ++i){
+     for(int j = 0; j < 2; ++j){
+        for(int k = 0; k < 2; ++k){
+           print(m[i][j][k]);
+        }
+      }
+   }
+}
+
+void main(){
+  print(j);
+  array<int> nums = [1,2,3,4];
+  int n = sizeof nums;
+  
+  for(tInt i = 0; i < n; i+=2){
+     print(max(nums[i],nums[i+1]));
+  }
+
+  int k = 100;
+  print(k);
+
+  {int a = 0;
+   int b = 0;}
+
+  print(suma(nums)); 
+
+  print(k);
+  
+  pos p;
+  p.x = 1;
+  p.y = 5;
+
+  campos(p);
+
+  print(p.x);
+  print(p.y);
+
+  int * ptr = new (int);
+  * ptr = 3;
+  print(*ptr);
+
+  array<int>* ptrar = new(array<int,3>);
+  for(int i = 0; i< 3; ++i) ptrar[i] = (i+1)*10;
+  for(int i = 0; i< 3; ++i) print(ptrar[i]);
+  print(*ptr);
+
+  pos * ptrp = new (pos);
+  ptrp->x = 10;
+  ptrp->y = 11;
+
+  print(*ptr);
+  for(int i = 0; i< 3; ++i) print(ptrar[i]);
+  print (ptrp->x);
+  print (ptrp->y);
+  
+  array<array<array<int>>> m = [[[1,2],[3,4]],[[5,6],[7,8]]];
+  mostrarMatriz(m,2);
+}

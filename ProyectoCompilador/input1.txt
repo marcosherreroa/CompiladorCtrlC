@@ -1,0 +1,29 @@
+
+int a = 4-3-2;
+
+int b = -4;
+
+int f(int c){
+
+  int d = 1 + 2 - 3;
+  int e = 2;
+  c = c + d*e;
+
+  return c;
+}
+
+void main(){
+  int c = -1;
+  int d = -2;
+  int e = -3;
+
+  print(c);
+  print(d);
+  print(e);
+  print(&a);
+  print(a);
+  print(b);
+  
+  print(-1);
+  print(f(c));
+}

@@ -1,0 +1,25 @@
+class IdValor{
+   int id;
+   int valor;
+}
+
+void main(){
+    array<IdValor, 5> arr;
+    
+    for(int i = 0; i < 5; ++i){ //lectura de datos de entrada
+        arr[i].id = input();
+        arr[i].valor = input();
+    }
+    
+    int idMin = arr[0].id; 
+    int valMin = arr[0].valor;
+    
+    for(int i = 1; i < 5; ++i){
+        if(arr[i].valor < valMin){
+            valMin = arr[i].valor;
+            idMin = arr[i].id;
+        }
+    }
+    
+    print (idMin);
+}

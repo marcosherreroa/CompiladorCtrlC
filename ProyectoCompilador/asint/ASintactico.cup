@@ -1,0 +1,602 @@
+package asint;
+
+import java_cup.runtime.*;
+import java.util.*;
+import ast.*;
+import alex.ALexico;
+import alex.UnidadLexica;
+import alex.TokenValue;
+import errors.*;
+
+scan with {: return getScanner().next_token(); :};
+parser code {:
+   private int parseErrors;
+   public void syntax_error(Symbol s) {
+     ErroresSintacticos.errorSintactico((TokenValue)s.value);
+     ++parseErrors;
+   }
+   public int getParseErrors(){
+       return parseErrors;
+   }
+:};
+init with {:
+   parseErrors = 0;
+   ALexico alex = (ALexico)getScanner();
+:};
+
+
+terminal     PRINT, INCLUDE, ALIAS,
+             CONST, RETURN, CLASS, PUBLIC, PRIVATE, THIS,
+             IF, ELSE, WHILE, FOR, BREAK, CONTINUE,
+             INT, REAL, BOOL, CHAR, VOID, ARRAY,
+             PAP, PCIERRE, CAP, CCIERRE, LAP, LCIERRE,
+             COMA, DQUOTES, PCOMA,
+             INTLIT, REALLIT, BOOLLIT, CHARLIT,
+             ASIGNA, MENOR, MAYOR, IGUAL, DISTINTO, MENORIGUAL, MAYORIGUAL,
+             MAS , MENOS, ESTRELLA, DIV, MOD, PUNTO , FLECHA, INCR, DECR,
+             SUMAASIGNA, RESTAASIGNA, MULTASIGNA, DIVASIGNA, MODASIGNA,
+             NEG, AND, OR ,
+             SIZEOF, SIZEOFT, NEW, INPUT, AMPERSAND,
+             IDEN, PATH;
+
+non terminal Program S;
+non terminal ProgramClause Clause;
+non terminal List<ProgramClause> ClauseList;
+non terminal ClassClause ClassClause;
+non terminal List<ClassClause> ClassClauseList;
+non terminal Declaration Declaration, MaybeDeclaration, SimpleDeclaration, CopyInitialization;
+non terminal Type Type;
+non terminal Function Function;
+non terminal Parameter Param;
+non terminal Clase Class;
+non terminal Attribute Attribute;
+non terminal Method Method;
+non terminal Constructor Constructor;
+non terminal String Visib;
+non terminal List<Parameter> ParamList0, ParamList1;
+non terminal DependentBlock DependentBlock;
+non terminal IndependentBlock IndependentBlock;
+non terminal List<Statement> StmList;
+non terminal Statement Statement0 , Statement1;
+non terminal Conditional UnmatchedConditional, MatchedConditional;
+non terminal WhileLoop UnmatchedWhile, MatchedWhile ;
+non terminal ForLoop UnmatchedFor, MatchedFor;
+non terminal PrintStm PrintStm;
+non terminal ReturnStm ReturnStm;
+non terminal Lvalue Lvalue0, Lvalue1, Lvalue2;
+non terminal Expression Exp0, Exp1, Exp2, Exp3, Exp4 , Exp5, Exp6, Exp7, MaybeExp0;
+non terminal Input Input;
+non terminal CollateralOperation CollatOp;
+non terminal Identifier Identifier;
+non terminal Literal Literal;
+non terminal ArrayLiteral ArrayLit;
+non terminal List<Literal> LitSeq, CharSeq;
+non terminal FunctionCall FunctionCall;
+non terminal List<Expression> ExpList0, ExpList1;
+
+S ::= ClauseList : cL
+      {: RESULT = new Program(cL); :};
+
+ClauseList ::=
+              {: RESULT = new ArrayList<ProgramClause>(); :}
+              |
+              ClauseList: cL Clause: c
+              {: cL.add(c); RESULT = cL; :}
+              |
+              ClauseList: cL PCOMA
+              {: RESULT = cL; :}
+              |
+              ClauseList: cL INCLUDE PATH : r
+              {: TokenValue r1 = (TokenValue)r;
+                List<ProgramClause> cL1 = Program.include(r1.lexema);
+                cL.addAll(cL1);
+                RESULT = cL; :};
+
+Clause ::= ALIAS Type: t Identifier : id PCOMA
+            {: RESULT = new Alias(id,t); :}
+           |
+           Declaration : d
+            {: RESULT = d; :}
+           |
+           Function : f
+            {: RESULT = f; :}
+           |
+           Class :c
+            {: RESULT = c; :}
+           |
+           error PCOMA
+           {: RESULT = new ErrorNode();:}
+           |
+           error LCIERRE
+           {: RESULT = new ErrorNode(); :};
+
+Declaration ::= SimpleDeclaration :d
+                 {: RESULT = d; :}
+                |
+                CopyInitialization: d
+                 {: RESULT = d; :};
+
+SimpleDeclaration ::= Type: t Identifier:id PCOMA
+                   {: RESULT = new Declaration(id,t,null,null); :};
+
+CopyInitialization ::= Type: t Identifier:id ASIGNA: v Exp0: e0 PCOMA
+                   {: RESULT = new Declaration(id,t,(TokenValue)v,e0); :};
+
+
+MaybeDeclaration ::= Declaration : d
+                      {: RESULT = d; :}
+                    |
+                     PCOMA
+                      {: RESULT = null; :};
+
+Type ::=   INT : v
+            {: RESULT = new SimpleType(BasicType.INT); :}
+           |
+           REAL : v
+            {: RESULT = new SimpleType(BasicType.REAL); :}
+           |
+           BOOL : v
+            {: RESULT = new SimpleType(BasicType.BOOL); :}
+           |
+           CHAR : v
+            {: RESULT = new SimpleType(BasicType.CHAR); :}
+           |
+           Identifier : id
+              {: RESULT = id; :}
+           |
+           Type: t ESTRELLA
+             {: RESULT = new PointerType(t); :}
+           |
+           Type: t CONST
+             {: t.setConst();
+                RESULT = t; :}
+           |
+           ARRAY: v MENOR Type:t COMA INTLIT:d MAYOR
+             {: TokenValue vd = (TokenValue)d;
+                 int dim = Integer.parseInt(vd.lexema);
+                RESULT = new ArrayType(t,dim,(TokenValue)v); :}
+           |
+           ARRAY: v MENOR Type:t MAYOR
+             {: RESULT = new ArrayType(t,-1,(TokenValue)v); :};
+
+Function ::= Type: t Identifier:id PAP ParamList0:pL PCIERRE DependentBlock:b
+             {: RESULT = new Function(id,t,pL,b); :}
+             |
+             VOID : t Identifier:id PAP ParamList0:pL PCIERRE DependentBlock:b
+              {: RESULT = new Function(id,VoidType.VOID,pL,b); :};
+
+ParamList0 ::=
+               {: RESULT = new ArrayList<Parameter>(); :}
+               |
+               ParamList1: pL
+               {: RESULT = pL; :};
+
+ParamList1 ::= Param : p
+               {: RESULT = new ArrayList<Parameter>(); RESULT.add(p); :}
+               |
+               ParamList1: pL COMA Param: p
+               {: pL.add(p); RESULT = pL; :};
+
+
+Param ::= Type:t Identifier:id
+          {: RESULT = new Parameter(id,false,t); :}
+          |
+          Type:t AMPERSAND Identifier:id
+          {: RESULT = new Parameter(id,true,t); :}
+          |
+          error
+           {: RESULT = new ErrorParameter(); :};
+
+
+Class ::= CLASS Identifier : id LAP ClassClauseList: cL LCIERRE
+          {: RESULT = new Clase(id,cL); :};
+
+ClassClauseList ::=
+                    {: RESULT = new ArrayList<ClassClause>(); :}
+                    |
+                    ClassClauseList: cL ClassClause: c
+                    {: cL.add(c); RESULT = cL; :}
+                    |
+                    ClassClauseList: cL PCOMA
+                    {: RESULT = cL; :};
+
+ClassClause ::=  Attribute : atb
+                  {: RESULT = atb; :}
+                 |
+                 Method : meth
+                  {: RESULT = meth; :}
+                 |
+                 Class :c
+                  {: RESULT = c; :}
+                 |
+                 Constructor : c
+                  {: RESULT = c; :}
+                 |
+                 ALIAS Type: t Identifier : id
+                  {: RESULT = new Alias(id,t); :}
+                 |
+                 error PCOMA
+                  {: RESULT = new ErrorNode(); :}
+                 |
+                 error LCIERRE
+                  {: RESULT = new ErrorNode(); :};
+
+
+Attribute ::= Visib: v Type : t Identifier : id
+               {: RESULT = new Attribute(id, t, v); :}
+              |
+              Type : t Identifier : id
+               {: RESULT = new Attribute(id, t, "public"); :};
+
+Method ::= Visib : v Type: t Identifier:id PAP ParamList0:pL PCIERRE DependentBlock:b
+             {: RESULT = new Method(id,t,pL,b, v); :}
+            |
+            Visib : v VOID Identifier:id PAP ParamList0:pL PCIERRE DependentBlock:b
+              {: RESULT = new Method(id,VoidType.VOID,pL,b, v); :}
+            |
+            Type: t Identifier:id PAP ParamList0:pL PCIERRE DependentBlock:b
+             {: RESULT = new Method(id,t,pL,b,"public"); :}
+             |
+             VOID Identifier:id PAP ParamList0:pL PCIERRE DependentBlock:b
+              {: RESULT = new Method(id,VoidType.VOID,pL,b,"public"); :};
+
+Constructor ::= Visib: v Identifier : id PAP  ParamList0: pL PCIERRE DependentBlock: b
+                 {: RESULT = new Constructor(id,pL,b,v); :}
+               |
+                Identifier : id PAP  ParamList0: pL PCIERRE DependentBlock: b
+                 {: RESULT = new Constructor(id,pL,b,"public"); :};
+
+Visib ::= PUBLIC  : v
+            {: RESULT = "public"; :}
+          |
+          PRIVATE : v
+            {: RESULT = "private"; :};
+
+DependentBlock ::= LAP StmList : stmL LCIERRE
+                  {: RESULT = new DependentBlock(stmL); :};
+
+IndependentBlock ::= LAP StmList : stmL LCIERRE
+                  {: RESULT = new IndependentBlock(stmL); :};
+
+StmList ::=
+           {: RESULT = new ArrayList<Statement>(); :}
+           |
+           StmList: stmL Statement0: stm
+           {: stmL.add(stm); RESULT = stmL; :};
+
+Statement0 ::= UnmatchedConditional : cond
+               {: RESULT = cond; :}
+               |
+               UnmatchedWhile : wh
+               {: RESULT = wh; :}
+               |
+               UnmatchedFor : forLoop
+               {: RESULT = forLoop; :}
+               |
+               Statement1 : stm
+               {: RESULT = stm; :}
+               |
+               error PCOMA
+               {: RESULT = new ErrorNode(); :}
+               |
+               error LCIERRE
+               {: RESULT = new ErrorNode(); :};
+
+
+Statement1 ::= CollatOp : f PCOMA
+               {: RESULT = f; :}
+              |
+              Declaration: dec
+              {: RESULT = dec; :}
+              |
+              ALIAS Type: t Identifier : id PCOMA
+               {: RESULT = new Alias(id,t); :}
+              |
+              MatchedConditional : cond
+              {: RESULT = cond; :}
+              |
+              MatchedWhile : wh
+              {: RESULT = wh; :}
+              |
+              MatchedFor : forLoop
+              {: RESULT = forLoop; :}
+              |
+              PrintStm : print
+              {: RESULT = print; :}
+              |
+              ReturnStm : ret
+              {: RESULT = ret; :}
+              |
+              BREAK : brk PCOMA
+              {: RESULT = new BreakStm((TokenValue) brk); :}
+              |
+              CONTINUE : cntn PCOMA
+              {: RESULT = new ContinueStm((TokenValue) cntn); :}
+              |
+              IndependentBlock : b
+              {: RESULT = b; :}
+              |
+              Class :c
+               {: RESULT = c; :};
+
+
+CollatOp ::=
+              {: RESULT = new EmptyStm(); :}
+              |
+              Lvalue0: lv ASIGNA : v Exp0: e
+               {: RESULT = new Assignment(lv,e, (TokenValue)v); :}
+               |
+              Lvalue0 : lv SUMAASIGNA : v Exp0: e
+               {: Expression e1 = new BinExp(lv, "+", e, (TokenValue)v);
+                  RESULT = new Assignment(lv, e1, (TokenValue)v); :}
+               |
+               Lvalue0 : lv RESTAASIGNA : v Exp0: e
+                {: Expression e1 = new BinExp(lv, "-", e,(TokenValue)v);
+                   RESULT = new Assignment(lv, e1,(TokenValue)v); :}
+               |
+               Lvalue0 : lv MULTASIGNA : v Exp0: e
+                {: Expression e1 = new BinExp(lv,"*", e, (TokenValue)v);
+                   RESULT = new Assignment(lv, e1,(TokenValue)v); :}
+               |
+               Lvalue0 : lv DIVASIGNA : v Exp0: e
+                {: Expression e1 = new BinExp(lv, "/", e,(TokenValue)v);
+                   RESULT = new Assignment(lv, e1,(TokenValue)v); :}
+               |
+               Lvalue0 : lv MODASIGNA : v Exp0: e
+                {: Expression e1 = new BinExp(lv, "%", e,(TokenValue)v);
+                   RESULT = new Assignment(lv, e1,(TokenValue)v); :}
+               |
+               INCR : v Lvalue0 : lv
+                {: RESULT = new IncDecPref((TokenValue)v, lv); :}
+                 |
+               DECR : v Lvalue0: lv
+                  {: RESULT = new IncDecPref((TokenValue)v, lv); :}
+                 |
+               Lvalue1 : lv INCR : v
+                {: RESULT = new IncDecPost((TokenValue)v, lv); :}
+                 |
+               Lvalue1: lv DECR : v
+                  {: RESULT = new IncDecPost((TokenValue)v,  lv); :}
+                 |
+               FunctionCall : call
+                  {: RESULT = call; :};
+
+UnmatchedConditional ::=  IF : v PAP  Exp0:e PCIERRE Statement0: s
+                          {: RESULT = new Conditional(e,s,null,(TokenValue)v); :}
+                          |
+                          IF : v PAP Exp0:e PCIERRE Statement1: s ELSE UnmatchedConditional:c
+                          {: RESULT = new Conditional(e,s,c,(TokenValue)v); :};
+
+MatchedConditional ::= IF : v PAP Exp0:e PCIERRE Statement1: s1 ELSE Statement1: s2
+                       {: RESULT = new Conditional(e,s1,s2,(TokenValue)v); :};
+
+UnmatchedWhile ::= WHILE : v PAP Exp0:e PCIERRE UnmatchedConditional: s
+                    {: RESULT = new WhileLoop(e,s,(TokenValue)v); :};
+
+MatchedWhile ::= WHILE : v PAP Exp0:e PCIERRE Statement1: s
+                   {: RESULT = new WhileLoop(e,s,(TokenValue)v); :};
+
+ UnmatchedFor ::= FOR: v PAP MaybeDeclaration: ini MaybeExp0: cond PCOMA CollatOp : inc PCIERRE UnmatchedConditional: s
+                    {: RESULT = new ForLoop(ini,cond,inc,s, (TokenValue)v); :};
+
+MatchedFor ::= FOR: v PAP MaybeDeclaration: ini MaybeExp0: cond PCOMA CollatOp : inc PCIERRE Statement1 : s
+                    {: RESULT = new ForLoop(ini,cond,inc,s, (TokenValue)v); :};
+
+PrintStm ::= PRINT:v PAP Exp0: e0 PCIERRE PCOMA
+             {: RESULT = new PrintStm(e0,(TokenValue)v); :};
+
+ReturnStm ::= RETURN: r MaybeExp0 : e0 PCOMA
+             {: RESULT = new ReturnStm((TokenValue) r, e0); :};
+
+Lvalue0 ::= INCR : v Lvalue0 : lv
+            {: RESULT = new IncDecPref((TokenValue)v, lv); :}
+           |
+           DECR : v Lvalue0 : lv
+            {: RESULT = new IncDecPref((TokenValue)v, lv); :}
+           |
+           ESTRELLA: v Lvalue0 : lv
+            {: RESULT = new Dereference(lv,(TokenValue)v); :}
+           |
+           Lvalue1 : lv
+            {: RESULT = lv; :};
+
+Lvalue1 ::= Lvalue1: lv CAP : v Exp0: e CCIERRE
+             {: RESULT = new ArrayAccess(lv, e, (TokenValue)v); :}
+            |
+            Lvalue1: lv PUNTO: v Identifier : id
+             {: RESULT = new ClassAccess(lv,id,(TokenValue)v); :}
+            |
+            Lvalue1: lv FLECHA : v Identifier : id
+             {: RESULT = new ClassAccess(new Dereference(lv,(TokenValue)v), id, (TokenValue)v); :}
+            |
+            Lvalue2 : lv
+              {: RESULT = lv; :};
+
+Lvalue2 ::= Identifier : id
+            {: RESULT = id; :}
+            |
+            THIS : th
+            {: RESULT = new This((TokenValue)th); :};
+
+MaybeExp0 ::= Exp0 : e
+              {: RESULT = e; :}
+              |
+
+              {:RESULT = null; :};
+
+Exp0 ::=  Exp0 : e1 OR : v Exp1 : e2
+          {: RESULT = new BinExp(e1,"||",e2,(TokenValue)v); :}
+          |
+          Exp1 : e
+          {: RESULT = e; :}
+          |
+          error
+          {: RESULT = new ErrorNode(); :};
+
+Exp1 ::= Exp1 : e1 AND : v Exp2 : e2
+          {: RESULT = new BinExp(e1,"&&",e2,(TokenValue)v); :}
+         |
+         Exp2 : e
+          {: RESULT = e; :};
+
+
+Exp2 ::= Exp2 : e1 IGUAL : v Exp3 : e2
+         {: RESULT = new BinExp(e1,"==",e2,(TokenValue)v); :}
+         |
+         Exp2 : e1 DISTINTO : v Exp3 : e2
+         {: RESULT = new BinExp(e1,"!=",e2,(TokenValue)v); :}
+         |
+         Exp3 : e
+         {: RESULT = e; :};
+
+Exp3::=  Exp3 : e1 MENOR : v Exp4: e2
+          {: RESULT = new BinExp(e1,"<",e2,(TokenValue)v); :}
+          |
+         Exp3 : e1 MAYOR : v Exp4: e2
+          {:RESULT  = new BinExp(e1,">",e2,(TokenValue)v); :}
+          |
+         Exp3 : e1 MENORIGUAL : v Exp4: e2
+          {:RESULT  = new BinExp(e1,"<=",e2,(TokenValue)v); :}
+          |
+          Exp3 : e1 MAYORIGUAL : v Exp4: e2
+           {:RESULT  = new BinExp(e1,">=",e2,(TokenValue)v); :}
+          |
+          Exp4 : e
+           {:RESULT = e; :};
+
+Exp4 ::= Exp4: e1 MAS : v Exp5: e2
+         {: RESULT= new BinExp (e1,"+",e2,(TokenValue)v); :}
+         |
+         Exp4: e1 MENOS : v Exp5: e2
+         {: RESULT= new BinExp (e1,"-",e2,(TokenValue)v); :}
+         |
+         Exp5: e
+         {: RESULT = e; :};
+
+Exp5 ::=  Exp5: e1 ESTRELLA : v Exp6: e2
+          {: RESULT= new BinExp (e1,"*",e2,(TokenValue)v); :}
+         |
+         Exp5: e1 DIV : v Exp6: e2
+         {: RESULT= new BinExp (e1,"/",e2,(TokenValue)v); :}
+         |
+         Exp5: e1 MOD : v Exp6: e2
+         {: RESULT= new BinExp (e1,"%",e2,(TokenValue)v); :}
+         |
+         Exp6: e
+         {: RESULT = e; :};
+
+Exp6 ::= MENOS : v Exp7: e
+          {: RESULT = new UnExp("-",e,(TokenValue)v); :}
+         |
+         NEG : v Exp7 : e
+          {: RESULT = new UnExp("!",e,(TokenValue)v); :}
+         |
+         SIZEOF : v Exp7 : e
+          {: RESULT = new UnExp("sizeof",e,(TokenValue)v); :}
+          |
+          Exp7 : e
+           {: RESULT = e; :};
+
+Exp7 ::=  Lvalue0 : lv
+           {: RESULT = lv; :}
+           |
+           Literal : lit
+          {: RESULT= lit; :}
+          |
+          Lvalue1 : e INCR : v
+            {: RESULT = new IncDecPost((TokenValue)v, e); :}
+          |
+          Lvalue1 : e DECR : v
+            {: RESULT = new IncDecPost((TokenValue)v, e); :}
+          |
+          AMPERSAND : v Lvalue0 : lv
+           {: RESULT = new UnExp("&", lv, (TokenValue)v); :}
+          |
+          FunctionCall : f
+           {: RESULT = f; :}
+          |
+          Input : inp
+          {: RESULT = inp; :}
+          |
+          NEW PAP Type : t PCIERRE
+          {: RESULT = new New(t); :}
+          |
+          SIZEOFT  PAP Type : t PCIERRE
+          {: RESULT = new Sizeoft(t); :}
+          |
+          PAP Exp0: e PCIERRE
+          {: RESULT = e; :};
+
+Identifier ::= IDEN : id
+               {: RESULT = new Identifier((TokenValue)id); :};
+
+Literal ::= INTLIT :l
+            {: RESULT = new SimpleLiteral((TokenValue)l, BasicType.INT); :}
+            |
+            REALLIT : l
+            {: RESULT = new SimpleLiteral((TokenValue)l,BasicType.REAL); :}
+            |
+            BOOLLIT : l
+            {: RESULT = new SimpleLiteral((TokenValue)l,BasicType.BOOL); :}
+            |
+            CHARLIT : l
+            {: RESULT = new SimpleLiteral((TokenValue)l,BasicType.CHAR); :}
+            |
+            ArrayLit : l
+            {: RESULT = l; :};
+
+
+
+ArrayLit ::= CAP: ini LitSeq: seq CCIERRE
+               {: RESULT = new ArrayLiteral((TokenValue)ini, seq); :}
+             |
+             DQUOTES: ini CharSeq: seq DQUOTES
+               {: RESULT = new ArrayLiteral((TokenValue)ini, seq); :};
+
+LitSeq ::= Literal : l
+              {: List<Literal> seq = new ArrayList<Literal>();
+                 seq.add(l);
+                 RESULT = seq; :}
+            |
+            error
+            {: List<Literal> seq = new ArrayList<Literal>();
+               seq.add(new ErrorNode());
+               RESULT = seq; :}
+            |
+            LitSeq : seq COMA Literal: l
+             {: seq.add(l); RESULT = seq; :}
+             |
+             LitSeq: seq COMA error
+             {: seq.add(new ErrorNode()); RESULT = seq; :};
+
+CharSeq ::=
+                {: RESULT = new ArrayList<Literal>(); :}
+              |
+               CharSeq:seq CHARLIT: l0
+                 {: Literal l = new SimpleLiteral((TokenValue)l0, BasicType.CHAR);
+                    seq.add(l);
+                    RESULT = seq; :}
+              |
+              CharSeq:seq error
+                {: seq.add(new ErrorNode());
+                   RESULT = seq; :};
+
+FunctionCall ::= Lvalue1 : id PAP : v ExpList0: aL PCIERRE
+                 {: RESULT = new FunctionCall(id,aL,(TokenValue)v); :};
+
+Input ::= INPUT PAP MaybeExp0 : e PCIERRE
+            {: RESULT = new Input(e); :};
+
+ExpList0 ::=
+               {: RESULT = new ArrayList<Expression>(); :}
+               |
+               ExpList1: eL
+               {: RESULT = eL; :};
+
+ExpList1 ::=  Exp0 : e
+                {: List<Expression> eL = new ArrayList<Expression>();
+                  eL.add(e);
+                  RESULT = eL; :}
+                 |
+               ExpList1: eL COMA Exp0: e
+               {: eL.add(e); RESULT = eL; :};

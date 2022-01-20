@@ -1,0 +1,7 @@
+#include "examplesGen/math.txt"
+
+void main(){
+  int b = input(); //Introducir base
+  int e = input(); //Intorducir exponente
+  print(pow(b,e));
+}

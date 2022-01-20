@@ -1,0 +1,6 @@
+void main(){
+   int n = input ("Introduce un numero: ");
+   
+   if (n % 2) print ("El numero introducido es impar\n");
+   else print ("El numero introducido es par\n");
+}

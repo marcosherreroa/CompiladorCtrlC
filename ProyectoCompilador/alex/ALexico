@@ -1,0 +1,245 @@
+package alex;
+
+import errors.*;
+
+%%
+%cup
+%line
+%char
+%class ALexico
+%unicode
+%public
+
+%{
+  private ALexOperations ops;
+  private int lexErrors = 0;
+  private int charprevlines = 0;
+  private String path;
+  public String lexema() {return yytext();}
+  public String path() {return path;}
+  public int fila() {return yyline+1;}
+  public int columna() {return (yychar+1)- charprevlines;}
+  public void fijaPath(String path){
+     this.path = path;
+  }
+
+  public int getLexErrors(){
+     return lexErrors;
+  }
+%}
+
+%eofval{
+  return ops.unidadEof();
+%eofval}
+
+%init{
+  ops = new ALexOperations(this);
+%init}
+
+%state STRING, COMMENT, INCLUDE
+
+comentapertura = \/\*
+comentcierre = \*\/
+commentchar = [^\r\n]
+comentarioCorto = \/\/{commentchar}*
+ruta = \"({stringchar})*\"
+
+newline = [\n\r]
+otroseparador = [ \t\b]
+noseparador = [^ \t\r\b\n]
+prohibidos = [`´$@¬]
+
+include = #[ ]*include
+print  = print
+alias = alias
+const = const
+return = return
+class = class
+public = public
+private = private
+this = this
+if = if
+else = else
+while = while
+for = for
+continue = continue
+break = break
+array = array
+
+voidType = void
+intType = int
+realType = real
+boolType = bool
+charType = char
+
+parentesisApertura = \(
+parentesisCierre = \)
+corcheteApertura = \[
+corcheteCierre = \]
+llaveApertura = \{
+llaveCierre = \}
+
+coma  = ,
+dquotes = \"
+puntoComa = ;
+
+parteEntera = 0|{digitoPositivo}{digito}*
+parteDecimal = {digito}+
+numeroEntero = {parteEntera}
+numeroReal = {parteEntera}\.{parteDecimal}|{parteEntera}e{parteEntera}
+
+numBin = 0b(0|1)+
+numHex = 0x[0-9A-Fa-f]+
+numOct = 0[0-7]+
+
+asigna = \=
+operadorMenor = <
+operadorMayor = >
+operadorIgual = \=\=
+operadorDistinto = !\=
+operadorSuma = \+
+operadorResta = \-
+operadorEstrella = \*
+operadorDivision = /
+operadorMod = %
+operadorPunto = \.
+operadorFlecha = ->
+operadorIncr = \+\+
+operadorDecr = \-\-
+operadorNeg = !
+operadorSizeof = sizeof
+operadorSizeoft = sizeoft
+operadorNew = new
+operadorInput = input
+operadorMenorIgual = <\=
+operadorMayorIgual = >\=
+operadorAnd = &&
+operadorOr = \|\|
+operadorSumaAsigna = \+\=
+operadorRestaAsigna = \-\=
+operadorMultAsigna = \*\=
+operadorDivAsigna = /\=
+operadorModAsigna = %\=
+
+ampersand = &
+
+boolValue = true|false
+letra = [A-Za-z]
+controlchar = \\[abtnvfre]
+punctchar = \\[\"\'\\]
+rawchar = [^\'\\\t\r\b\n]|{controlchar}|{punctchar}
+stringchar = [^\"\\\t\r\b\n]|{controlchar}|{punctchar}
+charValue = '({rawchar})'
+digitoPositivo = [1-9]
+digito = ({digitoPositivo}|0)
+
+
+IdentifierStart = ([_a-zA-Z])
+IdentifierEnd = (_|{letra}|{digito})
+Identifier = {IdentifierStart}({IdentifierEnd})*
+
+%%
+
+<COMMENT>   {commentchar}              {}
+
+
+<STRING>    {stringchar}                 {return ops.unidadRawChar();}
+<STRING>    {newline}                 { ErroresLexicos.unterminatedString(fila(),columna(),lexema());
+                                        ++lexErrors;
+                                        yybegin(YYINITIAL);
+                                        charprevlines = yychar+1;}
+
+
+<YYINITIAL> {comentapertura}          {yybegin(COMMENT);}
+<COMMENT>   {comentcierre}            {yybegin(YYINITIAL);}
+
+<INCLUDE>   {ruta}                    {yybegin(YYINITIAL); return ops.unidadPath();}
+<INCLUDE>   {newline}                 {ErroresLexicos.missingPath(fila(),columna(),lexema());
+                                       ++lexErrors;
+                                       yybegin(YYINITIAL);
+                                       charprevlines = yychar+1;}
+
+<YYINITIAL, COMMENT> {newline}        {charprevlines = yychar+1;}
+<YYINITIAL> {prohibidos}              {ErroresLexicos.forbidden(fila(),columna(),lexema());
+                                        ++lexErrors;}
+<YYINITIAL> {comentarioCorto}         {charprevlines = yychar+1;}
+
+<YYINITIAL,STRING,INCLUDE> {otroseparador}  {}
+
+<YYINITIAL> {include}                 {yybegin(INCLUDE); return ops.unidadInclude();}
+<YYINITIAL> {print}                   {return ops.unidadPrint();}
+<YYINITIAL> {alias}                   {return ops.unidadAlias();}
+<YYINITIAL> {const}                   {return ops.unidadConst();}
+<YYINITIAL> {return}                  {return ops.unidadReturn();}
+<YYINITIAL> {class}                   {return ops.unidadClass();}
+<YYINITIAL> {public}                  {return ops.unidadPublic();}
+<YYINITIAL> {private}                 {return ops.unidadPrivate();}
+<YYINITIAL>  {this}                    {return ops.unidadThis();}
+<YYINITIAL> {if}                      {return ops.unidadIf();}
+<YYINITIAL> {else}                    {return ops.unidadElse();}
+<YYINITIAL> {while}                   {return ops.unidadWhile();}
+<YYINITIAL> {for}                     {return ops.unidadFor();}
+<YYINITIAL> {break}                   {return ops.unidadBreak();}
+<YYINITIAL> {continue}                {return ops.unidadContinue();}
+<YYINITIAL> {array}                   {return ops.unidadArray();}
+
+<YYINITIAL> {voidType}                {return ops.unidadVoidType();}
+<YYINITIAL> {intType}                 {return ops.unidadIntType();}
+<YYINITIAL> {realType}                {return ops.unidadRealType();}
+<YYINITIAL> {boolType}                {return ops.unidadBoolType();}
+<YYINITIAL> {charType}                {return ops.unidadCharType();}
+
+<YYINITIAL> {parentesisApertura}      {return ops.unidadPAp();}
+<YYINITIAL> {parentesisCierre}        {return ops.unidadPCierre();}
+<YYINITIAL> {corcheteApertura}        {return ops.unidadCAp();}
+<YYINITIAL> {corcheteCierre}          {return ops.unidadCCierre();}
+<YYINITIAL> {llaveApertura}           {return ops.unidadLAp();}
+<YYINITIAL> {llaveCierre}             {return ops.unidadLCierre();}
+
+<YYINITIAL> {coma}                    {return ops.unidadComa();}
+<YYINITIAL> {dquotes}                 {yybegin(STRING); return ops.unidadDquotes();}
+<STRING>   {dquotes}                  {yybegin(YYINITIAL); return ops.unidadDquotes();}
+<YYINITIAL> {puntoComa}               {return ops.unidadPuntoComa();}
+
+<YYINITIAL> {asigna}                  {return ops.unidadAsigna();}
+<YYINITIAL> {operadorMenor}           {return ops.unidadMenor();}
+<YYINITIAL> {operadorMayor}           {return ops.unidadMayor();}
+<YYINITIAL> {operadorIgual}           {return ops.unidadIgual();}
+<YYINITIAL> {operadorDistinto}        {return ops.unidadDistinto();}
+<YYINITIAL> {operadorSuma}            {return ops.unidadSuma();}
+<YYINITIAL> {operadorResta}           {return ops.unidadResta();}
+<YYINITIAL> {operadorEstrella}        {return ops.unidadEstrella();}
+<YYINITIAL> {operadorDivision}        {return ops.unidadDiv();}
+<YYINITIAL> {operadorMod}             {return ops.unidadMod();}
+<YYINITIAL> {operadorPunto}           {return ops.unidadPunto();}
+<YYINITIAL> {operadorFlecha}          {return ops.unidadFlecha();}
+<YYINITIAL> {operadorIncr}            {return ops.unidadIncr();}
+<YYINITIAL> {operadorDecr}            {return ops.unidadDecr();}
+<YYINITIAL> {operadorNeg}             {return ops.unidadNeg();}
+<YYINITIAL> {operadorSizeof}          {return ops.unidadSizeof();}
+<YYINITIAL> {operadorSizeoft}          {return ops.unidadSizeoft();}
+<YYINITIAL> {operadorNew}             {return ops.unidadNew();}
+<YYINITIAL> {operadorInput}           {return ops.unidadInput();}
+<YYINITIAL> {operadorMenorIgual}      {return ops.unidadMenorIgual();}
+<YYINITIAL> {operadorMayorIgual}      {return ops.unidadMayorIgual();}
+<YYINITIAL> {operadorAnd}             {return ops.unidadAnd();}
+<YYINITIAL> {operadorOr}              {return ops.unidadOr();}
+<YYINITIAL> {operadorSumaAsigna}      {return ops.unidadSumaAsigna();}
+<YYINITIAL> {operadorRestaAsigna}     {return ops.unidadRestaAsigna();}
+<YYINITIAL> {operadorMultAsigna}      {return ops.unidadMultAsigna();}
+<YYINITIAL> {operadorDivAsigna}       {return ops.unidadDivAsigna();}
+<YYINITIAL> {operadorModAsigna}       {return ops.unidadModAsigna();}
+
+<YYINITIAL> {ampersand}               {return ops.unidadAmpersand();}
+
+<YYINITIAL> {numeroEntero}            {return ops.unidadIntValue();}
+<YYINITIAL> {numeroReal}              {return ops.unidadRealValue();}
+<YYINITIAL> {numBin}                  {return ops.unidadNumBin();}
+<YYINITIAL> {numOct}                  {return ops.unidadNumOct();}
+<YYINITIAL> {numHex}                  {return ops.unidadNumHex();}
+<YYINITIAL> {boolValue}               {return ops.unidadBoolValue();}
+<YYINITIAL> {charValue}               {return ops.unidadCharValue();}
+<YYINITIAL> {Identifier}              {return ops.unidadIdentifier();}
+
+<YYINITIAL> [^]                       {ErroresLexicos.unmatchedInput(fila(),columna(),lexema());
+                                       ++lexErrors;}

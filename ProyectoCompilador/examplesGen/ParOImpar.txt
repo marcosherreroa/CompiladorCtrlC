@@ -1,0 +1,6 @@
+void main(){
+   int n = input (10); //Introduce un numero
+   
+   if (n % 2) print (1); //impar
+   else print (0); //par
+}

@@ -1,0 +1,12 @@
+java -cp jlex.jar JLex.Main alex/ALexico
+
+java -cp cup.jar java_cup.Main -parser ASintactico -symbols ClaseLexica -nopositions asint/ASintactico.cup
+
+javac -cp ".;cup.jar" alex/*.java asint/*.java ast/*.java asem/*.java errors/*.java
+
+java -cp ".;cup.jar" asint.Main input.txt
+
+wat2wasm main.wat
+
+node main.js < datosJS.txt
+

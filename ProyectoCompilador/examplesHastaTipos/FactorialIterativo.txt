@@ -1,0 +1,10 @@
+void main(){
+   int n = input ("Introduce un numero: ");
+   int fact = 1;
+   
+   while (n > 1){
+        fact *= n--; 
+   }
+   
+   print (fact);
+}

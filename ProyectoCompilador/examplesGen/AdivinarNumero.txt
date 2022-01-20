@@ -1,0 +1,12 @@
+void main(){
+   int n = 0;
+   print (10);//nos pide introducir el número
+   
+   while(true){
+      n = input ();
+      if (n != 13) print (0); //No
+      else break;
+   }
+   
+   print (1); //Si
+}

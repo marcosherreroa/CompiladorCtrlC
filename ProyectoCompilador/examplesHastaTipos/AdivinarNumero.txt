@@ -1,0 +1,12 @@
+void main(){
+   int n = 0;
+   print ("Escribe el numero en que estoy pensando...\n");
+   
+   while(true){
+      n = input ();
+      if (n != 13) print ("Nop. Vuelve a intentarlo\n");
+      else break;
+   }
+   
+   print ("Acertaste!!\n");
+}

@@ -1,0 +1,17 @@
+bool esTsup(array<array<int,2>> matriz, int dim){
+    bool tsup = true;
+    for(int i = 0; tsup && i < dim ; ++i){
+        for(int j = 0; tsup && j < i; ++j){
+            if(matriz[i][j] != 0) tsup = false; 
+        }    
+    }
+    
+    return tsup;
+}
+
+void main(){
+   array<array<int>> matriz = [[1,1],[0,1]];
+   
+   if(esTsup(matriz,2)) print ("Es triangular superior\n");
+   else print ("No es trinagular superior\n");
+}

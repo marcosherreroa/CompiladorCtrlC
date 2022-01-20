@@ -1,0 +1,12 @@
+
+void main(){
+   array<int> numeros = [1,2,3,4,5];
+   int n = sizeof numeros / sizeoft (int);
+   
+   int suma = 0;
+   for(int i = 0; i < n; ++i){
+      suma += numeros[i];
+   }
+   
+   print (suma/n);
+}
